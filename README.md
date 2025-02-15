@@ -1,76 +1,113 @@
-# Auto-Sweep Multisig Wallet
+# Auto-Sweep MultiSig Wallet - Quick Reference Guide
 
-A multisig wallet that automatically forwards TRX to a designated address while maintaining multisig control over critical functions.
+## Setup
 
-## Deployment
+1. Deploy contract with:
+   - List of owner addresses
+   - Number of required confirmations
+   - Initial sweep receiver address
 
-1. Compile the contract in TronIDE or your preferred environment
-2. Deploy with these parameters:
-```js
-[
-    "TWp...Jx",  // owner1 address
-    "TYs...bR",  // owner2 address
-    "TKi...7G"   // owner3 address
-], 
-2,                                          // requires 2 confirmations
-"TRd...XX",     // sweep receiver address
-1000000                                     // sweep threshold (1 TRX)
+2. Requirements:
+   - Solidity ^0.8.0
+   - TRON compatible wallet
+   - Owner addresses must be unique and valid
+
+## Core Operations
+
+### 1. Basic Multisig Transactions' Flow
+```
+Submit a txn -> Get Confirmations -> Execute
 ```
 
-## Key Functions
-
-### Auto-Sweep Functions
-- `receive()`: Auto-forwards TRX above threshold
-- `setSweepReceiver(address)`: Change sweep address
-- `setSweepThreshold(uint256)`: Change minimum sweep amount
-- `toggleAutoSweep(bool)`: Enable/disable auto-sweep
-
-### Multisig Functions
-- `submitTransaction(address,uint,bytes)`: Submit new transaction
-- `confirmTransaction(uint)`: Confirm pending transaction
-- `executeTransaction(uint)`: Execute after enough confirmations
-- `revokeConfirmation(uint)`: Remove your confirmation
-
-### TRC20 Functions
-- `forwardTRC20(address)`: Forward TRC20 tokens (needs multisig)
-
-### View Functions
-- `getOwners()`: List all owners
-- `getTransaction(uint)`: Get transaction details
-- `getTransactionCount()`: Total transaction count
-
-## Example Workflow
-
-1. Deploy contract
-```js
-// Deploy parameters for 2-of-3 multisig
-[
-    "owner1", "owner2", "owner3"
-], 2, "sweepAddress", 1000000
-```
-
-2. Submit transaction
-```js
-// Example: Update sweep receiver
+### 2. Submit Transaction
+```solidity
 submitTransaction(
-    contractAddress,  // this contract's address
-    0,               // no TRX sent
-    // encoded function call to setSweepReceiver
-    "setSweepReceiver(new_address)"
+    address _to,    // Destination
+    uint _value,    // TRX amount
+    bytes _data     // Function data
 )
 ```
 
-3. Confirm & Execute
-```js
-// Two owners must run:
-confirmTransaction(0)  // txIndex = 0
-// Then anyone can:
-executeTransaction(0)
+### 3. Confirm & Execute
+```solidity
+// Confirm a transaction
+confirmTransaction(uint _txIndex)
+
+// Execute after required confirmations
+executeTransaction(uint _txIndex)
+
+// Cancel your confirmation if needed
+revokeConfirmation(uint _txIndex)
 ```
 
-## Important Notes
-- All received TRX above threshold auto-forwards
-- Critical functions require multisig approval
-- TRC20 transfers need multisig approval
-- Monitor events for sweep status
-- Test with small amounts first
+### 4. Auto-Sweep Management
+These are additional functions to help generate params to submit on multisig contract and when approved the functions in which (msg.sender == address(this)) condition is checked in the autosweepMultisig contract could be called. Use MultisigHelper to generate transaction data:
+
+```solidity
+// Change sweep receiver
+getSetSweepReceiverParams(
+    multisigAddress,
+    newReceiver
+)
+
+// Toggle auto-sweep
+getToggleAutoSweepParams(
+    multisigAddress,
+    enabled
+)
+
+// Forward TRC20 tokens
+getForwardTRC20Params(
+    multisigAddress,
+    tokenAddress
+)
+
+// Custom sweep function
+encodeSweepFunds()
+```
+
+## Important Events to Monitor
+
+- `SubmitTransaction`: New transaction submitted
+- `ConfirmTransaction`: Transaction confirmed by owner 
+- `ExecuteTransaction`: Transaction executed
+- `Swept`: TRX swept to receiver
+- `SweepFailed`: Sweep operation failed
+- `ForwardedTRC20`: TRC20 tokens forwarded
+
+## Quick Security Checklist
+
+1. Verify addresses before transactions
+2. Check transaction data matches intention
+3. Wait for required confirmations
+4. Test sweeping with small amounts first
+
+## Helper Contract Usage
+
+1. Import MultisigHelper contract
+2. Use helper functions to generate correct transaction data
+3. Submit generated data through main wallet contract
+
+## Limitations
+
+- Fixed owner set after deployment
+- Fixed confirmation requirement
+- No emergency pause
+- All owners have equal voting weight
+
+## Common Issues & Solutions
+
+1. Transaction stuck:
+   - Check confirmation count
+   - Verify execution permissions
+   - Ensure sufficient TRX
+
+2. Sweep not working:
+   - Verify receiver address
+   - Check auto-sweep status
+   - Check TRX balance
+
+3. TRC20 forward failed:
+   - Verify token contract
+   - Check token balance
+   - Ensure sufficient TRX for gas
