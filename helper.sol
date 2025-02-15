@@ -17,6 +17,11 @@ contract MultisigHelper {
         return abi.encodeWithSignature("forwardTRC20(address)", token);
     }
 
+    // Helper for sweepFunds
+    function encodeSweepFunds() public pure returns (bytes memory) {
+        return abi.encodeWithSignature("sweepFunds()");
+    }
+
     // Example usage function that shows how to use the encoded data
     function getMultisigTransactionData(
         address multisigAddress,
