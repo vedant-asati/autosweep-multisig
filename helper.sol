@@ -76,4 +76,7 @@ contract MultisigHelper {
         bytes memory encodedCall = encodeForwardTRC20(token);
         return getMultisigTransactionData(multisigAddress, encodedCall);
     }
+    function getBalance(address add) public view returns (uint256){
+     return add.balance;   
+    }
 }
